@@ -8,9 +8,14 @@ export const studentsController = {
 
         const [page, perPage] = getPaginationParams(req.query)
 
+        let { search } = req.query
+
+        if (!search || typeof search !== 'string')
+            search = '';           
+
         try {
 
-            const students = await studentService.findAllPaginated(page, perPage);
+            const students = await studentService.findAllPaginated(page, perPage, search);
             return res.json(students)
 
         } catch (error) {

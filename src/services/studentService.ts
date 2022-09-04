@@ -1,22 +1,68 @@
 import { Student } from '../models/Student'
+import { Op } from 'sequelize'
 
 export const studentService = {
 
-    findAllPaginated: async (page: number, perPage: number) => {
+    findAllPaginated: async (page: number, perPage: number, search : string) => {
         const offset = (page - 1) * perPage
 
-        const { count, rows } = await Student.findAndCountAll({
-            order: [['createdAt', 'DESC']],
-            limit: perPage,
-            offset
-        })
+        if (!search) {
 
-        return {
-            students: rows,
-            page,
-            perPage,
-            total: count
+            const { count, rows } = await Student.findAndCountAll({
+                order: [['createdAt', 'DESC']],
+                limit: perPage,
+                offset
+            })
+
+            return {
+                students: rows,
+                page,
+                perPage,
+                total: count
+            }            
         }
+        else {
+
+            const { count, rows } = await Student.findAndCountAll({
+                where: {
+                    [Op.or] : [
+                        {
+                            name: {
+                                [Op.iLike]: `%${search}%`
+                            }
+                        },
+                        {
+                            email: {
+                                [Op.iLike]: `%${search}%`
+                            }
+                        },
+                        {
+                            cpf: {
+                                [Op.iLike]: `%${search}%`
+                            }
+                        },
+                        {
+                            academic_record: {
+                                [Op.iLike]: `%${search}%`
+                            }
+                        }
+                    ]
+                },
+                order: [['createdAt', 'DESC']],
+                limit: perPage,
+                offset
+            })
+
+            return {
+                students: rows,
+                page,
+                perPage,
+                total: count
+            }            
+
+        }
+
+
     },
 
     findByCPF: async (cpf: string) => {
