@@ -2,14 +2,15 @@
   <v-app id="inspire">
     <v-navigation-drawer v-model="drawer" app>
       <v-list-item>
-        
+        <br>
         <v-list-item-content>
           <v-list-item-title class="text-h6">
-            Módulo Acadêmico
+            <img src="./assets/logo.jpeg" alt="Logo" app>
           </v-list-item-title>
-          <!-- <v-list-item-subtitle>
-            subtext
-          </v-list-item-subtitle> -->
+          <v-list-item-title class="text-h6">
+            Módulo Acadêmico
+          </v-list-item-title>          
+
         </v-list-item-content>
       </v-list-item>
 
@@ -69,7 +70,7 @@ export default {
     drawer: null,
     items: [
       { title: "Listar alunos", icon: "mdi-account-multiple", to: "/" },
-      { title: "Cadastrar alunos", icon: "mdi-account", to: "/AddStudent" },
+      { title: "Listar funcionários", icon: "mdi-account", to: "/AddStudent" },
     ],
   }),
 };

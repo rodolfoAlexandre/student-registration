@@ -33,32 +33,34 @@
 
               <v-card-text>
                 <v-container>
-                  <v-row>
-                    <v-col v-if="editedIndex === -1" cols="12" sm="6" md="12">
-                      <v-text-field
-                        v-model="editedItem.academic_record"
-                        label="Registro Acadêmico"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="12">
-                      <v-text-field
-                        v-model="editedItem.name"
-                        label="Nome"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col v-if="editedIndex === -1" cols="12" sm="6" md="12">
-                      <v-text-field
-                        v-model="editedItem.cpf"
-                        label="CPF"
-                      ></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="6" md="12">
-                      <v-text-field
-                        v-model="editedItem.email"
-                        label="Email"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
+                  <form action="" v-on:submit.prevent="checkForm">
+                    <v-row>
+                      <v-col v-if="editedIndex === -1" cols="12" sm="6" md="12">
+                        <v-text-field
+                          v-model="editedItem.academic_record"
+                          label="Registro Acadêmico"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="12">
+                        <v-text-field
+                          v-model="editedItem.name"
+                          label="Nome"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col v-if="editedIndex === -1" cols="12" sm="6" md="12">
+                        <v-text-field
+                          v-model="editedItem.cpf"
+                          label="CPF"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="6" md="12">
+                        <v-text-field
+                          v-model="editedItem.email"
+                          label="Email"
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                  </form>
                 </v-container>
               </v-card-text>
 
@@ -120,9 +122,7 @@
 import api from "@/services/api";
 
 export default {
-
   data: () => ({
-
     snack: false,
     snackColor: "",
     snackText: "",
@@ -137,6 +137,7 @@ export default {
       { text: "Data Criação", value: "createdAt" },
       { text: "Ações", value: "actions", sortable: false },
     ],
+    errorsValidation: [],
     studentsList: [],
     editedIndex: -1,
     editedItem: {
@@ -149,19 +150,16 @@ export default {
       name: "",
       email: "",
     },
-    search: '',
+    search: "",
     serverItemsLength: 0,
     page: 1,
-    itemsPerPage: 10,    
-
+    itemsPerPage: 10,
   }),
 
   computed: {
-    
     formTitle() {
       return this.editedIndex === -1 ? "Novo Aluno" : "Editar Aluno";
     },
-   
   },
 
   watch: {
@@ -170,27 +168,41 @@ export default {
     },
     dialogDelete(val) {
       val || this.closeDelete();
-    } 
+    },
   },
 
   // eslint-disable-next-line
   created() {},
 
-  methods: {    
+  methods: {
+    checkForm() {
+      this.errorsValidation = [];
 
-    changeSearch(){
-      if (this.search)
-        this.initialize();
+      if (this.editedItem.academic_record === "")
+        this.errorsValidation.push("O Campo registro acadêmico deve ser preenchido.")
+
+      if (this.editedItem.name === "")
+        this.errorsValidation.push("O Campo nome deve ser preenchido.")
+
+      if (this.editedItem.cpf === "")
+        this.errorsValidation.push("O Campo CPF deve ser preenchido.")
+
+      if (this.editedItem.email === "")
+        this.errorsValidation.push("O Campo email deve ser preenchido.")
+    },
+
+    changeSearch() {
+      if (this.search) this.initialize();
     },
 
     changePage(page) {
-      this.page = page
-      this.initialize()
+      this.page = page;
+      this.initialize();
     },
 
     changeItemsPerPage(itemsPerPage) {
-      this.itemsPerPage = itemsPerPage
-      this.initialize()
+      this.itemsPerPage = itemsPerPage;
+      this.initialize();
     },
 
     maskCpf(value) {
@@ -218,24 +230,25 @@ export default {
     },
 
     async initialize() {
-
       try {
 
-        let url = ''
+        let url = "";
 
-        if(this.itemsPerPage === -1) url = `/students?perPage=10000&page=1&search=${this.search}`
-        else url = `/students?perPage=${this.itemsPerPage}&page=${this.page.page}&search=${this.search}`
-        
+        if (this.itemsPerPage === -1)
+          url = `/students?perPage=10000&page=1&search=${this.search}`;
+        else
+          url = `/students?perPage=${this.itemsPerPage}&page=${this.page.page}&search=${this.search}`;
+
         await api.get(url).then((response) => {
-          //console.log(response.data)
+
           if (response.data) {
             this.studentsList = response.data.students.map((item) => {
               item.cpf = this.maskCpf(item.cpf);
               item.createdAt = new Date(item.createdAt).toLocaleString();
               return item;
-            })
-            this.loaded = true
-            this.serverItemsLength = response.data.total
+            });
+            this.loaded = true;
+            this.serverItemsLength = response.data.total;
           }
         });
       } catch (error) {
@@ -293,52 +306,61 @@ export default {
     },
 
     async save() {
-      if (this.editedIndex > -1) {
-        // Update
-        try {
-          const body = {
-            name: this.editedItem.name,
-            email: this.editedItem.email,
-          };
 
-          await api
-            .patch("/students/" + this.onlyNumbers(this.editedItem.cpf), body)
-            .then((response) => {
+      this.checkForm();
+
+      if (this.errorsValidation.length > 0) {
+        this.snackError(...this.errorsValidation);
+      }
+      else {
+
+        if (this.editedIndex > -1) {
+          // Update
+          try {
+            const body = {
+              name: this.editedItem.name,
+              email: this.editedItem.email,
+            };
+
+            await api
+              .patch("/students/" + this.onlyNumbers(this.editedItem.cpf), body)
+              .then((response) => {
+                if (response) {
+                  this.initialize();
+                  this.close();
+                  this.snackSuccess("Aluno atualizado com sucesso.");
+                }
+              });
+          } catch (error) {
+            if (error.response.status && error.response.status === 409) {
+              this.snackError(error.response.data.message);
+            } else {
+              this.snackError(error.response);
+            }
+          }
+        } else {
+          // Save
+          try {
+            const body = {
+              name: this.editedItem.name,
+              email: this.editedItem.email,
+              academic_record: this.editedItem.academic_record,
+              cpf: this.editedItem.cpf,
+            };
+
+            await api.post("/students", body).then((response) => {
               if (response) {
                 this.initialize();
                 this.close();
-                this.snackSuccess("Aluno atualizado com sucesso.");
+                this.snackSuccess("Aluno cadastrado com sucesso.");
               }
             });
-        } catch (error) {
-          if (error.response.status && error.response.status === 409) {
-            this.snackError(error.response.data.message);
-          } else {
-            this.snackError(error.response);
-          }
-        }
-      } else {
-        // Save
-        try {
-          const body = {
-            name: this.editedItem.name,
-            email: this.editedItem.email,
-            academic_record: this.editedItem.academic_record,
-            cpf: this.editedItem.cpf,
-          };
-
-          await api.post("/students", body).then((response) => {
-            if (response) {
-              this.initialize();
-              this.close();
-              this.snackSuccess("Aluno cadastrado com sucesso.");
+          } catch (error) {
+            if (error.response.status && error.response.status === 409) {
+              this.snackError(error.response.data.message);
+            } else {
+              this.snackError(error.response);
             }
-          });
-        } catch (error) {
-          if (error.response.status && error.response.status === 409) {
-            this.snackError(error.response.data.message);
-          } else {
-            this.snackError(error.response);
           }
         }
       }
